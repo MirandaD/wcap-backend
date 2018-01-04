@@ -1,5 +1,6 @@
 import itchat
 import bottle
+import os
 from bottle import route, run, response, abort
 PORT_NUMBER = 3001
 
