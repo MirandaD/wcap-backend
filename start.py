@@ -48,5 +48,8 @@ def check_login(uuid):
         abort(500, 'Something is wrong with the server.')
 
 app.install(EnableCors())
-app.run(host='localhost', port=PORT_NUMBER)
+if os.environ.get('APP_LOCATION') == 'heroku':
+    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)))
+else:
+    app.run(host='localhost', port=8080, debug=True)
 
