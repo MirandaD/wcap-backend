@@ -1,0 +1,4 @@
+{
+    "python.formatting.provider": "autopep8",
+    "python.pythonPath": "${workspaceFolder}/wcap-backend-dev/bin/python"
+}

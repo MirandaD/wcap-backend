@@ -1,7 +1,9 @@
 import itchat
 import bottle
 import os
-from bottle import route, run, response, abort
+from pymongo import MongoClient
+from bottle import route, run, response, abort, hook
+from assistant.auth import Auth
 PORT_NUMBER = 3001
 
 class EnableCors(object):
@@ -21,10 +23,18 @@ class EnableCors(object):
 
         return _enable_cors
 app = bottle.app()
+auth = Auth()
 @itchat.msg_register(itchat.content.TEXT)
 def print_contentm(msg):
     print(msg['Text'])
+
+@hook('after_request')
+def enable_cors():
+    response.headers['Access-Control-Allow-Origin'] = '*'
+    response.headers['Access-Control-Allow-Methods'] = 'PUT, GET, POST, DELETE, OPTIONS'
+    response.headers['Access-Control-Allow-Headers'] = 'Origin, Accept, Content-Type, X-Requested-With, X-CSRF-Token'
 @route('/')
+
 @route('/get-qrcode', method='GET')
 def get_qrcode():
     try:
@@ -37,20 +47,23 @@ def get_qrcode():
 @route('/check-login/<uuid>', method='GET')
 def check_login(uuid):
     try:
-        result = itchat.check_login(uuid=uuid)
+        result = auth.check_login(uuid=uuid)
+        print(result)
         if result == '200':
             return 'OK'
         elif result == '400':
-            abort(400)
+            return 'OK'
+        elif result == '408':
+            return 'OK'
         else:
             abort(500, result)
-    except (RuntimeError, TypeError, NameError):
-        print('[check-login] error')
+    except (RuntimeError, TypeError, NameError) as e:
+        print('[check-login] error', e)
         abort(500, 'Something is wrong with the server.')
 
-app.install(EnableCors())
+# @route('/get-user-info')
 if os.environ.get('APP_LOCATION') == 'heroku':
     app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)))
 else:
-    app.run(host='localhost', port=8080, debug=True)
+    app.run(host='localhost', port=3001, debug=True)
 
