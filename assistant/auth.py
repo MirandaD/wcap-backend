@@ -2,6 +2,7 @@ import re
 import requests
 import json, xml.dom.minidom
 import time
+import itchat
 from pymongo import MongoClient
 from . import config
 
@@ -21,7 +22,7 @@ class Auth():
         if data and data.group(1) == '200':
             savedLoginInfo = self.process_login_info(r.text, uuid)
             if savedLoginInfo:
-                return savedLoginInfo
+                return '200'
             else:
                 return '400'
         elif data:
@@ -40,6 +41,28 @@ class Auth():
         db = client['wacp-dev']
         return db.loginInfo.find_one({'uuid': uuid})
 
+    def web_init(self, loginInfo):
+        url = '%s/webwxinit' % loginInfo['url']
+        params = {
+            'r': int(-time.time() / 1579),
+            'pass_ticket': loginInfo['pass_ticket'], }
+        data = { 'BaseRequest': loginInfo['BaseRequest'], }
+        headers = {
+            'ContentType': 'application/json; charset=UTF-8',
+            'User-Agent' : config.USER_AGENT, }
+        r = self.requests.post(url, params=params, data=json.dumps(data), headers=headers)
+        dic = json.loads(r.content.decode('utf-8', 'replace'))
+        print('great!!!!!')
+        # deal with login info
+        itchat.utils.emoji_formatter(dic['User'], 'NickName')
+        loginInfo['InviteStartCount'] = int(dic['InviteStartCount'])
+        loginInfo['User'] = dic['User']
+        loginInfo['SyncKey'] = dic['SyncKey']
+        loginInfo['cookieJar'] = self.requests.cookies.get_dict()
+        loginInfo['synckey'] = '|'.join(['%s_%s' % (item['Key'], item['Val'])
+            for item in dic['SyncKey']['List']])
+        return loginInfo
+
     def process_login_info(self, loginContent, uuid):
         ''' when finish login (scanning qrcode)
         * syncUrl and fileUploadingUrl will be fetched
@@ -52,7 +75,6 @@ class Auth():
         regx = r'window.redirect_uri="(\S+)";'
         loginInfo['url'] = re.search(regx, loginContent).group(1)
         headers = { 'User-Agent' : config.USER_AGENT }
-        print('hey')
         r = self.requests.get(loginInfo['url'], headers=headers, allow_redirects=False)
         loginInfo['url'] = loginInfo['url'][:loginInfo['url'].rfind('/')]
         for indexUrl, detailedUrl in (
@@ -70,7 +92,6 @@ class Auth():
             loginInfo['fileUrl'] = loginInfo['syncUrl'] = loginInfo['url']
             loginInfo['deviceid'] = 'e' + repr(random.random())[2:17]
             loginInfo['BaseRequest'] = {}
-        print(loginInfo, r.text)
         for node in xml.dom.minidom.parseString(r.text).documentElement.childNodes:
             if node.nodeName == 'skey':
                 loginInfo['skey'] = loginInfo['BaseRequest']['Skey'] = node.childNodes[0].data
@@ -83,6 +104,6 @@ class Auth():
         if not all([key in loginInfo for key in ('skey', 'wxsid', 'wxuin', 'pass_ticket')]):
             print('Your wechat account may be LIMITED to log in WEB wechat, error info:\n%s' % r.text)
             return False
+        loginInfo = self.web_init(loginInfo)
         savedLoginInfo = self.save_login_info(loginInfo)
-        print(savedLoginInfo)
         return savedLoginInfo

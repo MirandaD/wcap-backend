@@ -49,8 +49,8 @@ def check_login(uuid):
     try:
         result = auth.check_login(uuid=uuid)
         print(result)
-        if result == '200':
-            return 'OK'
+        if result == uuid:
+            return 'Succeed'
         elif result == '400':
             return 'OK'
         elif result == '408':
