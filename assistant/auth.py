@@ -9,6 +9,11 @@ from . import config
 class Auth():
     def __init__(self):
         self.requests = requests.Session()
+        self.mongoConnectionStr = 'mongodb://localhost:27017/'
+        print os.environ.get('APP_LOCATION')
+        if os.environ.get('APP_LOCATION') == 'heroku':
+            self.mongoConnectionStr = 'mongodb://mirandaLi:lisirui1020@cluster0-shard-00-00-eluxi.mongodb.net:27017,cluster0-shard-00-01-eluxi.mongodb.net:27017,cluster0-shard-00-02-eluxi.mongodb.net:27017/admin?readPreference=primary&ssl=true'
+
     def check_login(self, uuid, customReply):
         url = '%s/cgi-bin/mmwebwx-bin/login' % config.BASE_URL
         localTime = int(time.time())
@@ -30,13 +35,13 @@ class Auth():
             return '400'
 
     def save_login_info(self, loginInfo):
-        client = MongoClient('mongodb://localhost:27017/')
+        client = MongoClient(self.mongoConnectionStr)
         db = client['wacp-dev']
         inserted = db.loginInfo.insert_one(loginInfo)
         return inserted
 
     def get_login_info_by_uuid(self, uuid):
-        client = MongoClient('mongodb://localhost:27017/')
+        client = MongoClient(self.mongoConnectionStr)
         db = client['wacp-dev']
         return db.loginInfo.find_one({'uuid': uuid})
 
