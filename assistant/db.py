@@ -1,7 +1,23 @@
 from pymongo import MongoClient
+from bson.objectid import ObjectId
 
 class DB():
+    def __init__(self):
+        self.client = MongoClient('mongodb://localhost:27017/')
+        self.db = self.client['wacp-dev']
+        self.LoginInfo = self.db.loginInfo
+        self.Messages = self.db.Messages
+        self.User = self.db.User
     def get_login_info_by_uuid(self, uuid):
         client = MongoClient('mongodb://localhost:27017/')
         db = client['wacp-dev']
         return db.loginInfo.find_one({'uuid': uuid})
+    def create_user(self,userInfo):
+        res = self.User.insert_one(userInfo)
+        return res.inserted_id
+    def find_user(self,email, password):
+        res = self.User.find_one({'email': email, 'password': password})
+        return res
+    def find_user_by_id(self, userId):
+        res = self.User.find_one({'_id': ObjectId(userId)})
+        return res

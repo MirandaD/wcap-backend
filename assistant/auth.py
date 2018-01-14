@@ -9,8 +9,7 @@ from . import config
 class Auth():
     def __init__(self):
         self.requests = requests.Session()
-    def check_login(self, uuid):
-        print('hey, good here')
+    def check_login(self, uuid, customReply):
         url = '%s/cgi-bin/mmwebwx-bin/login' % config.BASE_URL
         localTime = int(time.time())
         params = 'loginicon=true&uuid=%s&tip=1&r=%s&_=%s' % (
@@ -20,7 +19,7 @@ class Auth():
         regx = r'window.code=(\d+)'
         data = re.search(regx, r.text)
         if data and data.group(1) == '200':
-            savedLoginInfo = self.process_login_info(r.text, uuid)
+            savedLoginInfo = self.process_login_info(r.text, uuid, customReply)
             if savedLoginInfo:
                 return '200'
             else:
@@ -63,7 +62,7 @@ class Auth():
             for item in dic['SyncKey']['List']])
         return loginInfo
 
-    def process_login_info(self, loginContent, uuid):
+    def process_login_info(self, loginContent, uuid, customReply):
         ''' when finish login (scanning qrcode)
         * syncUrl and fileUploadingUrl will be fetched
         * deviceid and msgid will be generated
@@ -105,5 +104,6 @@ class Auth():
             print('Your wechat account may be LIMITED to log in WEB wechat, error info:\n%s' % r.text)
             return False
         loginInfo = self.web_init(loginInfo)
+        loginInfo['customReply'] = customReply
         savedLoginInfo = self.save_login_info(loginInfo)
         return savedLoginInfo
