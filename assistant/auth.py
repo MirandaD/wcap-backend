@@ -3,6 +3,7 @@ import requests
 import json, xml.dom.minidom
 import time
 import itchat
+import os
 from pymongo import MongoClient
 from . import config
 
