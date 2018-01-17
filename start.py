@@ -7,6 +7,7 @@ from assistant.auth import Auth
 from assistant.user import User
 from bson import json_util
 import json
+import assistant.config as config
 PORT_NUMBER = 3001
 
 class EnableCors(object):
@@ -49,7 +50,9 @@ def _enable_cors():
     response.headers['Access-Control-Allow-Origin'] = '*'
     response.headers['Access-Control-Allow-Methods'] = 'PUT, GET, POST, DELETE, OPTIONS'
     response.headers['Access-Control-Allow-Headers'] = 'Origin, Accept, Content-Type, X-Requested-With, X-CSRF-Token'
-@route('/')
+@route('/', method='GET')
+def defaultSuccessReturn():
+  return 'N/A request'
 
 @route('/get-qrcode/<userId>', method='GET')
 def get_qrcode(userId):
@@ -115,7 +118,7 @@ def create_user():
             return createdId
         else:
             response.status = 400
-            return 'Failed'           
+            return 'Failed'
     except (RuntimeError, TypeError, NameError) as e:
         print('Unexpected error', e)
         response.status = 500
@@ -134,15 +137,11 @@ def login_user():
            return json.dumps(userFound, indent=4, sort_keys=True, default=str)
         else:
            response.status = 401
-           return 'User not exist' 
+           return 'User not exist'
     except (RuntimeError, TypeError, NameError) as e:
         print('Unexpected error', e)
         response.status = 500
         return 'Server Error'
 
-# @route('/get-user-info')
-if os.environ.get('APP_LOCATION') == 'heroku':
-    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)))
-else:
-    app.run(host='localhost', port=3001, debug=True)
+app.run(host=config.BACKEND_HOST, port=config.BACKEND_PORT)
 
